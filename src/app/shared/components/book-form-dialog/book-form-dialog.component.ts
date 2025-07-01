@@ -160,6 +160,18 @@ export class BookFormDialogComponent implements OnInit {
 
     const dialogRef = dialog.open(BookFormDialogComponent, dialogConfig);
 
-    return dialogRef.afterClosed();
+    return new Observable(observer => {
+      dialogRef.afterClosed().subscribe(result => {
+        if (result?.success === true) {
+          observer.next({ success: true, book: result.book });
+          observer.complete();
+        } else if (result?.success === false && result?.error) {
+          observer.error(result.error);
+        } else {
+          observer.next({ success: false, cancelled: true });
+          observer.complete();
+        }
+      });
+    });
   }
 }

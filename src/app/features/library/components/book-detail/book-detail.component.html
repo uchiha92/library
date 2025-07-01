@@ -6,9 +6,9 @@
   <h1 class="mb-4">Book Details</h1>
   
   @if (isLoading()) {
-    <div class="text-center py-5">
-      <p>Loading book details...</p>
-      <mat-icon fontIcon="spinner" class="mat-icon-spin"></mat-icon>
+    <div class="text-center py-5 d-flex flex-column align-items-center justify-content-center">
+      <p>{{ this.loadingMessage }}</p>
+      <mat-progress-spinner [mode]="'indeterminate'"></mat-progress-spinner>
     </div>
   }
   

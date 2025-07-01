@@ -25,8 +25,8 @@ export class InMemoryBookService implements IBookService {
     }
   ]);
 
-  getBooks(): Book[] {
-    return this._books();
+  getBooks(): Observable<Book[]> {
+    return of(this._books()).pipe(delay(200));
   }
 
   updateBook(id: string, book: Book): Observable<Book> {
