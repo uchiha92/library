@@ -1,0 +1,53 @@
+<mat-toolbar color="primary">
+  <span>📚 Book Details</span>
+</mat-toolbar>
+
+<div class="container-fluid py-4">
+  <h1 class="mb-4">Book Details</h1>
+  
+  @if (isLoading()) {
+    <div class="text-center py-5">
+      <p>Loading book details...</p>
+      <mat-icon fontIcon="spinner" class="mat-icon-spin"></mat-icon>
+    </div>
+  }
+  
+  @else if (this.book$()) {
+    <mat-card p-3>
+      <mat-card-header>
+        <mat-card-title>{{ this.book$()!.title }}</mat-card-title>
+        <mat-card-subtitle>by {{ this.book$()!.author }}</mat-card-subtitle>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="book-info py-3">    
+          <p><strong>Genre:</strong> {{ this.book$()!.genre }}</p>
+          <p><strong>Year:</strong> {{ this.book$()!.year }}</p>
+          <p><strong>Description:</strong> {{ this.book$()!.description }}</p>
+        </div>
+      </mat-card-content>
+
+      <mat-card-actions class="d-flex justify-content-end py-3">
+        <button class="mx-3" mat-raised-button color="primary" (click)="editBook(this.book$()!.id)">
+          Edit Book
+        </button>
+        <button class="mx-3" mat-raised-button color="warn" (click)="deleteBook(this.book$()!.id)">
+          Delete Book
+        </button>
+        <button class="mx-3" mat-stroked-button [routerLink]="['/']">
+          Back to Library
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+  
+  @else if (bookNotFound()) {
+    <div class="text-center py-5">
+      <h3>Book not found</h3>
+      <p>The book with ID {{ this.idParam }} could not be found.</p>
+      <button mat-raised-button color="primary" [routerLink]="['/']">
+        Back to Library
+      </button>
+    </div>
+  }
+</div>

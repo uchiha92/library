@@ -1,0 +1,112 @@
+<div class="book-form-dialog">
+  <h2 mat-dialog-title class="dialog-title">
+    {{ data.title || (isEditMode ? "Edit Book" : "Create New Book") }}
+  </h2>
+
+  <form [formGroup]="bookForm" (ngSubmit)="onSave()">
+    <mat-dialog-content class="dialog-content">
+      <div class="form-grid">
+        <!-- Title Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Title</mat-label>
+          <input
+            matInput
+            formControlName="title"
+            placeholder="Enter book title"
+          />
+          @if (bookForm.get('title')?.hasError('required')) {
+          <mat-error> Title is required </mat-error>
+          } @if (bookForm.get('title')?.hasError('minlength')) {
+          <mat-error> Title must be at least 2 characters </mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Author Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Author</mat-label>
+          <input
+            matInput
+            formControlName="author"
+            placeholder="Enter author name"
+          />
+          @if (bookForm.get('author')?.hasError('required')) {
+          <mat-error> Author is required </mat-error>
+          } @if (bookForm.get('author')?.hasError('minlength')) {
+          <mat-error> Author must be at least 2 characters </mat-error>
+          }
+        </mat-form-field>
+
+        <!-- Year and Genre Row -->
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Year</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="year"
+              placeholder="Publication year"
+            />
+            @if (bookForm.get('year')?.hasError('required')) {
+            <mat-error> Year is required </mat-error>
+            } @if (bookForm.get('year')?.hasError('min')) {
+            <mat-error> Year must be at least 1000 </mat-error>
+            } @if (bookForm.get('year')?.hasError('max')) {
+            <mat-error> Year cannot be in the future </mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Genre</mat-label>
+            <mat-select formControlName="genre" placeholder="Select genre">
+              @for (genre of genres; track genre) {
+              <mat-option [value]="genre">
+                {{ genre }}
+              </mat-option>
+              }
+            </mat-select>
+            @if (bookForm.get('genre')?.hasError('required')) {
+            <mat-error> Genre is required </mat-error>
+            }
+          </mat-form-field>
+        </div>
+
+        <!-- Description Field -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea
+            matInput
+            formControlName="description"
+            placeholder="Enter book description"
+            rows="4"
+          >
+          </textarea>
+          @if (bookForm.get('description')?.hasError('required')) {
+          <mat-error> Description is required </mat-error>
+          } @if (bookForm.get('description')?.hasError('minlength')) {
+          <mat-error> Description must be at least 10 characters </mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-dialog-content>
+
+    <mat-dialog-actions class="dialog-actions">
+      <button
+        type="button"
+        mat-button
+        (click)="onCancel()"
+        class="cancel-button"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        mat-raised-button
+        color="primary"
+        [disabled]="bookForm.invalid"
+        class="save-button"
+      >
+        {{ isEditMode ? "Update" : "Create" }}
+      </button>
+    </mat-dialog-actions>
+  </form>
+</div>

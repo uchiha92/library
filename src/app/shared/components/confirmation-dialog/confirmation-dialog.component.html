@@ -1,0 +1,30 @@
+<div class="confirmation-dialog p-3">
+  <div mat-dialog-title class="dialog-title d-flex align-items-center">
+    @if (data.icon) {
+      <mat-icon [color]="data.icon === 'warning' ? 'warn' : 'primary'" class="dialog-icon mr-4">
+        {{ data.icon }}
+      </mat-icon>
+    }
+    <span class="dialog-title-text mx-4">{{ data.title || 'Confirm Action' }}</span>
+</div>
+  
+  <mat-dialog-content class="dialog-content">
+    <p class="dialog-message">{{ data.message || 'Are you sure you want to proceed?' }}</p>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions class="dialog-actions d-flex justify-content-between">
+    <button 
+      mat-button 
+      (click)="onCancel()" 
+      class="cancel-button">
+      {{ data.cancelText || 'Cancel' }}
+    </button>
+    <button 
+      mat-raised-button 
+      color="warn" 
+      (click)="onConfirm()"
+      class="confirm-button">
+      {{ data.confirmText || 'Confirm' }}
+    </button>
+  </mat-dialog-actions>
+</div>
