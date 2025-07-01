@@ -17,8 +17,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { BookFormDialogData } from '../../../core/models/book-form-dialog-data';
 import { Book } from '../../../core/models/book';
-import { HttpBookService } from '../../../core/services/httpBookService/http-book.service';
+import { BOOK_SERVICE_TOKEN } from '../../../core/tokens/book-service.token';
 import { GENRES } from '../../constants/genres.constants';
+import { IdUtils } from '../../utils/id.utils';
 
 @Component({
   selector: 'app-book-form-dialog',
@@ -36,7 +37,7 @@ import { GENRES } from '../../constants/genres.constants';
   styleUrl: './book-form-dialog.component.css',
 })
 export class BookFormDialogComponent implements OnInit {
-  private readonly httpBookService = inject(HttpBookService);
+  private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly dialogRef = inject(MatDialogRef<BookFormDialogComponent>);
   readonly data = inject<BookFormDialogData>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
@@ -83,7 +84,9 @@ export class BookFormDialogComponent implements OnInit {
       const result = {
         action: 'save',
         book: {
-          id: this.data.book?.id ?? this.generateId(),
+          id: this.isEditMode 
+            ? this.data.book?.id 
+            : IdUtils.generateId('book'),
           ...formValue,
         } as Book,
       };
@@ -106,12 +109,6 @@ export class BookFormDialogComponent implements OnInit {
       const control = this.bookForm.get(key);
       control?.markAsTouched();
     });
-  }
-
-  private generateId(): string {
-    return (
-      'book_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11)
-    );
   }
 
   getErrorMessage(fieldName: string): string {
