@@ -22,3 +22,7 @@ body {
 * {
   box-sizing: border-box;
 }
+
+mat-form-field.mat-form-field-invalid .mat-form-field-outline-thick {
+  color: var(--mat-form-field-error-color, #f44336);
+}
