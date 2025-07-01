@@ -8,9 +8,9 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { RouterModule } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
-import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
 import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
+import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants';
 
 @Component({
   selector: 'app-book-list',
@@ -54,63 +54,55 @@ export class BookListComponent implements OnInit {
   }
 
   deleteBook(id: string): void {
-    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
-      ...DIALOG_CONSTANTS.DEFAULT_CONFIG,
-      data: DIALOG_CONSTANTS.GENERIC_DELETE_DIALOG
-    });
+    const deleteDialogData = {
+      ...DIALOG_CONSTANTS.GENERIC_DELETE_DIALOG,
+      title: 'Delete book',
+      message: 'Are you sure you want to delete this book? This action cannot be undone.'
+    };
 
-    dialogRef.afterClosed().subscribe(result => {
-      if (result === true) {
-        this.bookService.deleteBook(id).subscribe({
-          next: () => {
-            console.log('Book deleted successfully');
-          },
-          error: (error: any) => console.error('Error deleting book:', error)
-        });
-      }
+    ConfirmationDialogComponent.openDialog(
+      this.dialog, 
+      () => this.bookService.deleteBook(id),
+      deleteDialogData
+    ).subscribe({
+      next: (result: any) => {
+        if (result.success) {
+          console.log('Book deleted');
+        }
+      },
+      error: (error: any) => console.error('error:', error)
     });
   }
   
-  addBook(): void { 
-    const dialogRef = this.dialog.open(BookFormDialogComponent, {
-      ...DIALOG_CONSTANTS.FORM_CONFIG,
-      data: DIALOG_CONSTANTS.CREATE_BOOK_DIALOG
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result?.action === 'save' && result.book) {
-        this.bookService.createBook(result.book).subscribe({
-          next: (createdBook: any) => {
-            console.log('Book created successfully:', createdBook);
-          },
-          error: (error: any) => console.error('Error creating book:', error)
-        });
-      }
+  addBook(): void {
+    BookFormDialogComponent.openDialog(
+      this.dialog,
+      (book) => this.bookService.createBook(book)
+    ).subscribe({
+      next: (result: any) => {
+        if (result.success) {
+          console.log('Book created');
+        }
+      },
+      error: (error: any) => console.error('error:', error)
     });
   }
 
    editBook(id: string): void {
     const bookToEdit = this.books$().find((book: any) => book.id === id);
-    const dialogRef = this.dialog.open(BookFormDialogComponent, {
-      ...DIALOG_CONSTANTS.FORM_CONFIG,
-      data: {
-        title: 'Edit Book',
-        book: bookToEdit,
-        mode: 'edit',
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result?.action === 'save' && result.book) {
-        this.bookService.updateBook(result.book.id, result.book).subscribe({
-          next: (updatedBook: any) => {
-            console.log('Book updated successfully:', updatedBook);
-          },
-          error: (error: any) => {
-            console.error('Error updating book:', error);
-          },
-        });
-      }
-    });
+    if (bookToEdit) {
+      BookFormDialogComponent.openDialog(
+        this.dialog,
+        (book) => this.bookService.updateBook(book.id, book),
+        bookToEdit
+      ).subscribe({
+        next: (result: any) => {
+          if (result.success) {
+            console.log('Book edited');
+          }
+        },
+        error: (error: any) => console.error('error:', error)
+      });
+    }
   }
 }

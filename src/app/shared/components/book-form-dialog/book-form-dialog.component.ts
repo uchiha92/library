@@ -9,17 +9,24 @@ import {
   MatDialogRef,
   MAT_DIALOG_DATA,
   MatDialogModule,
+  MatDialog,
 } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
-import { BookFormDialogData } from '../../../core/models/book-form-dialog-data';
+import { Observable } from 'rxjs';
 import { Book } from '../../../core/models/book';
-import { BOOK_SERVICE_TOKEN } from '../../../core/tokens/book-service.token';
 import { GENRES } from '../../constants/genres.constants';
 import { IdUtils } from '../../utils/id.utils';
+import { DIALOG_CONSTANTS } from '../../constants/dialog.constants';
+
+export interface BookFormDialogConfig {
+  title?: string;
+  book?: Book;
+  actionCallback: (book: Book) => Observable<any>;
+}
 
 @Component({
   selector: 'app-book-form-dialog',
@@ -37,9 +44,8 @@ import { IdUtils } from '../../utils/id.utils';
   styleUrl: './book-form-dialog.component.css',
 })
 export class BookFormDialogComponent implements OnInit {
-  private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly dialogRef = inject(MatDialogRef<BookFormDialogComponent>);
-  readonly data = inject<BookFormDialogData>(MAT_DIALOG_DATA);
+  readonly data = inject<BookFormDialogConfig>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
 
   bookForm!: FormGroup;
@@ -48,7 +54,7 @@ export class BookFormDialogComponent implements OnInit {
 
 
   ngOnInit(): void {
-    this.isEditMode = this.data.mode === 'edit';
+    this.isEditMode = !!this.data.book;
     this.initializeForm();
   }
 
@@ -81,27 +87,28 @@ export class BookFormDialogComponent implements OnInit {
     if (this.bookForm.valid) {
       const formValue = this.bookForm.value;
 
-      const result = {
-        action: 'save',
-        book: {
-          id: this.isEditMode 
-            ? this.data.book?.id 
-            : IdUtils.generateId('book'),
-          ...formValue,
-        } as Book,
+      const book: Book = {
+        id: this.isEditMode 
+          ? this.data.book!.id 
+          : IdUtils.generateId('book'),
+        ...formValue,
       };
 
-      this.dialogRef.close(result);
+      this.data.actionCallback(book).subscribe({
+        next: (result) => {
+          this.dialogRef.close({ success: true, book: result });
+        },
+        error: (error) => {
+          this.dialogRef.close({ success: false, error });
+        }
+      });
     } else {
       this.markFormGroupTouched();
     }
   }
 
   onCancel(): void {
-    const result = {
-      action: 'cancel',
-    };
-    this.dialogRef.close(result);
+    this.dialogRef.close({ success: false, cancelled: true });
   }
 
   private markFormGroupTouched(): void {
@@ -131,5 +138,28 @@ export class BookFormDialogComponent implements OnInit {
       return 'Year cannot be in the future';
     }
     return '';
+  }
+
+  static openDialog(
+    dialog: MatDialog, 
+    actionCallback: (book: Book) => Observable<any>,
+    book?: Book,
+    customTitle?: string
+  ): Observable<any> {
+    const isEditMode = !!book;
+    const defaultTitle = isEditMode ? 'Edit Book' : 'Add New Book';
+    
+    const dialogConfig = {
+      ...DIALOG_CONSTANTS.FORM_CONFIG,
+      data: {
+        title: customTitle ?? defaultTitle,
+        book,
+        actionCallback
+      } as BookFormDialogConfig
+    };
+
+    const dialogRef = dialog.open(BookFormDialogComponent, dialogConfig);
+
+    return dialogRef.afterClosed();
   }
 }
