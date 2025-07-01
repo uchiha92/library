@@ -4,12 +4,13 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
-import { MatIcon } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
 import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
-import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants';
+import { NotificationService } from '../../../../core/services/notification-service/notification.service';
+import { NOTIFICATION_MESSAGES } from '../../../../shared/constants/notification-messages.constants';
+import { NotificationUtils } from '../../../../shared/utils/notification.utils';
 
 @Component({
   selector: 'app-book-detail',
@@ -19,7 +20,7 @@ import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants'
     MatToolbarModule,
     CommonModule,
     MatButtonModule,
-    MatIcon,
+    MatProgressSpinnerModule,
     MatDialogModule,
   ],
   templateUrl: './book-detail.component.html',
@@ -27,6 +28,7 @@ import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants'
 })
 export class BookDetailComponent implements OnInit {
   private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
+  private readonly notificationService = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
@@ -34,6 +36,7 @@ export class BookDetailComponent implements OnInit {
   private readonly books$ = this.bookService._books;
   
   idParam: string | null = null;
+  loadingMessage = NOTIFICATION_MESSAGES.LOADING;
 
   readonly book$ = computed(() => {
     if (!this.idParam) return null;
@@ -44,29 +47,30 @@ export class BookDetailComponent implements OnInit {
     this.idParam = this.route.snapshot.paramMap.get('id');
 
     if (this.books$().length === 0) {
-      this.bookService.getBooks();
+      this.bookService.getBooks().subscribe({
+        error: (error: any) => {
+          this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.FETCH_FAILED, 'books'));
+          console.error('error:', error);
+        }
+      });
     }
   }
 
   deleteBook(id: string): void {
-    const deleteDialogData = {
-      ...DIALOG_CONSTANTS.GENERIC_DELETE_DIALOG,
-      title: 'Delete book',
-      message: 'Are you sure you want to delete this book? This action cannot be undone.'
-    };
-
-    ConfirmationDialogComponent.openDialog(
-      this.dialog, 
+    this.notificationService.confirmDelete(
       () => this.bookService.deleteBook(id),
-      deleteDialogData
+      'book'
     ).subscribe({
       next: (result: any) => {
         if (result.success) {
-          console.log('Book deleted');
+          this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETED_SUCCESS, 'book'));
           this.router.navigate(['/']);
         }
       },
-      error: (error: any) => console.error('error:', error)
+      error: (error: any) => {
+        this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book'));
+        console.error('error:', error);
+      }
     });
   }
 
@@ -87,11 +91,14 @@ export class BookDetailComponent implements OnInit {
         currentBook
       ).subscribe({
         next: (result: any) => {
-          if (result.success) {
-            console.log('Book edited');
+          if (result?.success) {
+            this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATED_SUCCESS, 'book'));
           }
         },
-        error: (error: any) => console.error('error:', error)
+        error: (error: any) => {
+          this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book'));
+          console.error('error:', error);
+        }
       });
     }
   }
