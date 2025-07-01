@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpBookService } from '../../../../core/services/httpBookService/http-book.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +10,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
+import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
 
 @Component({
   selector: 'app-book-list',
@@ -28,10 +28,10 @@ import { BookFormDialogComponent } from '../../../../shared/components/book-form
   styleUrl: './book-list.component.css'
 })
 export class BookListComponent implements OnInit {
-  private readonly httpBookService = inject(HttpBookService);
+  private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly dialog = inject(MatDialog);
 
-  books$ = this.httpBookService._books;
+  books$ = this.bookService._books;
   
   pageSize = signal(16);
   pageIndex = signal(0);
@@ -45,16 +45,12 @@ export class BookListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.httpBookService.getBooks();
+    this.bookService.getBooks();
   }
 
   onPageChange(event: PageEvent): void {
     this.pageIndex.set(event.pageIndex);
     this.pageSize.set(event.pageSize);
-  }
-
-  private updateBooks(): void {
-    this.httpBookService.getBooks();
   }
 
   deleteBook(id: string): void {
@@ -65,11 +61,11 @@ export class BookListComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result === true) {
-        this.httpBookService.deleteBook(id).subscribe({
+        this.bookService.deleteBook(id).subscribe({
           next: () => {
-            this.updateBooks();
+            console.log('Book deleted successfully');
           },
-          error: (error) => console.error('Error deleting book:', error)
+          error: (error: any) => console.error('Error deleting book:', error)
         });
       }
     });
@@ -83,19 +79,18 @@ export class BookListComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result?.action === 'save' && result.book) {
-        this.httpBookService.createBook(result.book).subscribe({
-          next: (createdBook) => {
+        this.bookService.createBook(result.book).subscribe({
+          next: (createdBook: any) => {
             console.log('Book created successfully:', createdBook);
-            this.updateBooks();
           },
-          error: (error) => console.error('Error creating book:', error)
+          error: (error: any) => console.error('Error creating book:', error)
         });
       }
     });
   }
 
    editBook(id: string): void {
-    const bookToEdit = this.books$().find(book => book.id === id);
+    const bookToEdit = this.books$().find((book: any) => book.id === id);
     const dialogRef = this.dialog.open(BookFormDialogComponent, {
       ...DIALOG_CONSTANTS.FORM_CONFIG,
       data: {
@@ -107,11 +102,11 @@ export class BookListComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result?.action === 'save' && result.book) {
-        this.httpBookService.updateBook(result.book.id, result.book).subscribe({
-          next: () => {
-            console.log('Book updated successfully');
+        this.bookService.updateBook(result.book.id, result.book).subscribe({
+          next: (updatedBook: any) => {
+            console.log('Book updated successfully:', updatedBook);
           },
-          error: (error) => {
+          error: (error: any) => {
             console.error('Error updating book:', error);
           },
         });

@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, computed } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
-import { HttpBookService } from '../../../../core/services/httpBookService/http-book.service';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +9,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ConfirmationDialogComponent } from '../../../../shared/components/confirmation-dialog/confirmation-dialog.component';
 import { DIALOG_CONSTANTS } from '../../../../shared/constants/dialog.constants';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
+import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
 
 @Component({
   selector: 'app-book-detail',
@@ -26,25 +26,25 @@ import { BookFormDialogComponent } from '../../../../shared/components/book-form
   styleUrl: './book-detail.component.css',
 })
 export class BookDetailComponent implements OnInit {
-  private readonly httpBookService = inject(HttpBookService);
+  private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
 
-  private readonly books$ = this.httpBookService._books;
+  private readonly books$ = this.bookService._books;
   
   idParam: string | null = null;
 
   readonly book$ = computed(() => {
     if (!this.idParam) return null;
-    return this.books$().find(book => book.id === this.idParam) || undefined;
+    return this.books$().find((book: any) => book.id === this.idParam) ?? undefined;
   });
 
   ngOnInit(): void {
     this.idParam = this.route.snapshot.paramMap.get('id');
 
     if (this.books$().length === 0) {
-      this.httpBookService.getBooks();
+      this.bookService.getBooks();
     }
   }
 
@@ -56,7 +56,7 @@ export class BookDetailComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result === true) {
-        this.httpBookService.deleteBook(id).subscribe({
+        this.bookService.deleteBook(id).subscribe({
           next: () => {
             console.log('Book deleted successfully');
             this.router.navigate(['/']);
@@ -89,11 +89,11 @@ export class BookDetailComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result?.action === 'save' && result.book) {
-        this.httpBookService.updateBook(result.book.id, result.book).subscribe({
-          next: (updatedBook) => {
+        this.bookService.updateBook(result.book.id, result.book).subscribe({
+          next: (updatedBook: any) => {
             console.log('Book updated successfully:', updatedBook);
           },
-          error: (error) => {
+          error: (error: any) => {
             console.error('Error updating book:', error);
           },
         });
