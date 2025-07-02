@@ -59,7 +59,7 @@ export class BookDetailComponent implements OnInit {
      next: (result: any) => {
         if (result?.businessError) {
           this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book')}: ${result.businessError}`);
-        } else if (result?.success) {
+        } else {
           this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETED_SUCCESS, 'book'));
           this.router.navigate(['/']);
         }
@@ -86,7 +86,7 @@ export class BookDetailComponent implements OnInit {
         next: (result: any) => {
           if (result?.businessError) {
             this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book')}: ${result.businessError}`);
-          } else if (result?.success) {
+          } else {
             this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATED_SUCCESS, 'book'));
           }
         }
