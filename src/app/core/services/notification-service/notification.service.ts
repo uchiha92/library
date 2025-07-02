@@ -27,7 +27,7 @@ export class NotificationService implements INotificationService {
   showError(message: string, title?: string): void {
     const fullMessage = title ? `${title}: ${message}` : message;
     this.snackBar.open(fullMessage, 'Close', {
-      duration: 6000,
+      duration: 4000,
       panelClass: ['error-snackbar'],
       horizontalPosition: 'end',
       verticalPosition: 'top'

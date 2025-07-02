@@ -17,6 +17,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { Book } from '../../../core/models/book';
 import { GENRES } from '../../constants/genres.constants';
 import { IdUtils } from '../../utils/id.utils';
@@ -96,10 +97,14 @@ export class BookFormDialogComponent implements OnInit {
 
       this.data.actionCallback(book).subscribe({
         next: (result) => {
-          this.dialogRef.close({ success: true, book: result });
+          if (result?.errors) {
+            this.dialogRef.close({ success: false, businessError: result.errors });
+          } else {
+            this.dialogRef.close({ success: true, book: result });
+          }
         },
-        error: (error) => {
-          this.dialogRef.close({ success: false, error });
+        error: (httpError) => {
+          this.dialogRef.close({ success: false, httpError: true });
         }
       });
     } else {
@@ -160,18 +165,15 @@ export class BookFormDialogComponent implements OnInit {
 
     const dialogRef = dialog.open(BookFormDialogComponent, dialogConfig);
 
-    return new Observable(observer => {
-      dialogRef.afterClosed().subscribe(result => {
-        if (result?.success === true) {
-          observer.next({ success: true, book: result.book });
-          observer.complete();
-        } else if (result?.success === false && result?.error) {
-          observer.error(result.error);
+    return dialogRef.afterClosed().pipe(
+      filter(result => result && !result.cancelled && !result.httpError),
+      map(result => {
+        if (result.businessError) {
+          return { success: false, businessError: result.businessError };
         } else {
-          observer.next({ success: false, cancelled: true });
-          observer.complete();
+          return { success: true, book: result.book };
         }
-      });
-    });
+      })
+    );
   }
 }

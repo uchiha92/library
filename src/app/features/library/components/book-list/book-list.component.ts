@@ -47,12 +47,8 @@ export class BookListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.bookService.getBooks().subscribe({
-      error: (error: any) => {
-        this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.FETCH_FAILED, 'books'));
-        console.error('error:', error);
-      }
-    });
+    // Subscribe to fetch books - HTTP errors are handled by the global error interceptor
+    this.bookService.getBooks().subscribe();
   }
 
   onPageChange(event: PageEvent): void {
@@ -66,13 +62,11 @@ export class BookListComponent implements OnInit {
       'book'
     ).subscribe({
       next: (result: any) => {
-        if (result.success) {
+        if (result?.businessError) {
+          this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book')}: ${result.businessError}`);
+        } else {
           this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETED_SUCCESS, 'book'));
         }
-      },
-      error: (error: any) => {
-        this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book'));
-        console.error('error:', error);
       }
     });
   }
@@ -83,13 +77,11 @@ export class BookListComponent implements OnInit {
       (book) => this.bookService.createBook(book)
     ).subscribe({
       next: (result: any) => {
-        if (result?.success) {
+        if (result?.businessError) {
+          this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.CREATE_FAILED, 'book')}: ${result.businessError}`);
+        } else {
           this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.CREATED_SUCCESS, 'book'));
         }
-      },
-      error: (error: any) => {
-        this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.CREATE_FAILED, 'book'));
-        console.error('error:', error);
       }
     });
   }
@@ -103,13 +95,11 @@ export class BookListComponent implements OnInit {
         bookToEdit
       ).subscribe({
         next: (result: any) => {
-          if (result?.success) {
+          if (result?.businessError) {
+            this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book')}: ${result.businessError}`);
+          } else {
             this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATED_SUCCESS, 'book'));
           }
-        },
-        error: (error: any) => {
-          this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book'));
-          console.error('error:', error);
         }
       });
     }
