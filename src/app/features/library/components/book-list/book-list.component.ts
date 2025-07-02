@@ -47,7 +47,6 @@ export class BookListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    // Subscribe to fetch books - HTTP errors are handled by the global error interceptor
     this.bookService.getBooks().subscribe();
   }
 

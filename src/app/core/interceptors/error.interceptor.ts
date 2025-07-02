@@ -11,7 +11,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      handleHttpError(error, req, notificationService);
+      if (error.status >= 400) {
+        handleHttpError(error, req, notificationService);
+      }
       return throwError(() => error);
     })
   );
@@ -54,11 +56,4 @@ function handleHttpError(error: HttpErrorResponse, req: any, notificationService
   }
 
   notificationService.showError(errorMessage);
-
-  console.error(`HTTP Error [${method} ${url}]:`, {
-    status: error.status,
-    statusText: error.statusText,
-    error: error.error,
-    message: errorMessage
-  });
 }
