@@ -4,10 +4,15 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Observable } from 'rxjs';
+import { filter, map } from 'rxjs/operators';
 import { ConfirmationDialogData } from '../../../core/models/confirmation-dialog-data';
 import { DIALOG_CONSTANTS } from '../../constants/dialog.constants';
 
 export type { ConfirmationDialogData };
+
+export interface ConfirmationDialogConfig extends ConfirmationDialogData {
+  actionCallback?: () => Observable<any>;
+}
 
 @Component({
   selector: 'app-confirmation-dialog',
@@ -23,14 +28,29 @@ export type { ConfirmationDialogData };
 })
 export class ConfirmationDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<ConfirmationDialogComponent>);
-  readonly data = inject<ConfirmationDialogData>(MAT_DIALOG_DATA);
+  readonly data = inject<ConfirmationDialogConfig>(MAT_DIALOG_DATA);
 
   onConfirm(): void {
-    this.dialogRef.close(true);
+    if (this.data.actionCallback) {
+      this.data.actionCallback().subscribe({
+        next: (result) => {
+          if (result?.errors) {
+            this.dialogRef.close({ success: false, businessError: result.errors });
+          } else {
+            this.dialogRef.close({ success: true, confirmed: true, result });
+          }
+        },
+        error: (httpError) => {
+          this.dialogRef.close({ success: false, httpError: true });
+        }
+      });
+    } else {
+      this.dialogRef.close({ success: true, confirmed: true });
+    }
   }
 
   onCancel(): void {
-    this.dialogRef.close(false);
+    this.dialogRef.close({ success: false, cancelled: true });
   }
 
   static openDialog(
@@ -38,28 +58,27 @@ export class ConfirmationDialogComponent {
     confirmationAction: () => Observable<any>, 
     dialogData: ConfirmationDialogData
   ): Observable<any> {
+    const dialogConfig: ConfirmationDialogConfig = {
+      ...dialogData,
+      actionCallback: confirmationAction
+    };
+
     const dialogRef = dialog.open(ConfirmationDialogComponent, {
       ...DIALOG_CONSTANTS.DEFAULT_CONFIG,
-      data: dialogData
+      data: dialogConfig
     });
 
-    return new Observable(observer => {
-      dialogRef.afterClosed().subscribe(confirmed => {
-        if (confirmed === true) {
-          confirmationAction().subscribe({
-            next: (result) => {
-              observer.next({ success: true, confirmed: true, result });
-              observer.complete();
-            },
-            error: (error: any) => {
-              observer.error(error);
-            }
-          });
+    return dialogRef.afterClosed().pipe(
+      filter(result => result && !result.cancelled),
+      map(result => {
+        if (result.businessError) {
+          return { success: false, businessError: result.businessError };
+        } else if (result.httpError) {
+          return { success: false, httpError: true };
         } else {
-          observer.next({ success: false, cancelled: true });
-          observer.complete();
+          return { success: true, confirmed: true, result: result.result };
         }
-      });
-    });
+      })
+    );
   }
 }

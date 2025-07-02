@@ -47,12 +47,7 @@ export class BookDetailComponent implements OnInit {
     this.idParam = this.route.snapshot.paramMap.get('id');
 
     if (this.books$().length === 0) {
-      this.bookService.getBooks().subscribe({
-        error: (error: any) => {
-          this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.FETCH_FAILED, 'books'));
-          console.error('error:', error);
-        }
-      });
+      this.bookService.getBooks().subscribe();
     }
   }
 
@@ -61,15 +56,13 @@ export class BookDetailComponent implements OnInit {
       () => this.bookService.deleteBook(id),
       'book'
     ).subscribe({
-      next: (result: any) => {
-        if (result.success) {
+     next: (result: any) => {
+        if (result?.businessError) {
+          this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book')}: ${result.businessError}`);
+        } else if (result?.success) {
           this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETED_SUCCESS, 'book'));
           this.router.navigate(['/']);
         }
-      },
-      error: (error: any) => {
-        this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book'));
-        console.error('error:', error);
       }
     });
   }
@@ -91,13 +84,11 @@ export class BookDetailComponent implements OnInit {
         currentBook
       ).subscribe({
         next: (result: any) => {
-          if (result?.success) {
+          if (result?.businessError) {
+            this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book')}: ${result.businessError}`);
+          } else if (result?.success) {
             this.notificationService.showSuccess(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATED_SUCCESS, 'book'));
           }
-        },
-        error: (error: any) => {
-          this.notificationService.showError(NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book'));
-          console.error('error:', error);
         }
       });
     }
