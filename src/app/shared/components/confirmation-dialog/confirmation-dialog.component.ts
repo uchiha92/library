@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { ConfirmationDialogData } from '../../../core/models/confirmation-dialog-data';
 import { DIALOG_CONSTANTS } from '../../constants/dialog.constants';
@@ -26,13 +26,21 @@ export interface ConfirmationDialogConfig extends ConfirmationDialogData {
   templateUrl: './confirmation-dialog.component.html',
   styleUrl: './confirmation-dialog.component.css'
 })
-export class ConfirmationDialogComponent {
+export class ConfirmationDialogComponent implements OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<ConfirmationDialogComponent>);
   readonly data = inject<ConfirmationDialogConfig>(MAT_DIALOG_DATA);
+  private readonly destroy$ = new Subject<void>();
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   onConfirm(): void {
     if (this.data.actionCallback) {
-      this.data.actionCallback().subscribe({
+      this.data.actionCallback()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
         next: (result) => {
           if (result?.errors) {
             this.dialogRef.close({ success: false, businessError: result.errors });

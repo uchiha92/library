@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
@@ -7,6 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { RouterModule } from '@angular/router';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Subject, takeUntil } from 'rxjs';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
 import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
 import { NotificationService } from '../../../../core/services/notification-service/notification.service';
@@ -28,10 +29,11 @@ import { NotificationUtils } from '../../../../shared/utils/notification.utils';
   templateUrl: './book-list.component.html',
   styleUrl: './book-list.component.css'
 })
-export class BookListComponent implements OnInit {
+export class BookListComponent implements OnInit, OnDestroy {
   private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly notificationService = inject(NotificationService);
   private readonly dialog = inject(MatDialog);
+  private readonly destroy$ = new Subject<void>();
 
   books$ = this.bookService._books;
   
@@ -47,7 +49,14 @@ export class BookListComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.bookService.getBooks().subscribe();
+    this.bookService.getBooks()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onPageChange(event: PageEvent): void {
@@ -59,7 +68,8 @@ export class BookListComponent implements OnInit {
     this.notificationService.confirmDelete(
       () => this.bookService.deleteBook(id),
       'book'
-    ).subscribe({
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (result: any) => {
         if (result?.businessError) {
           this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book')}: ${result.businessError}`);
@@ -74,7 +84,8 @@ export class BookListComponent implements OnInit {
     BookFormDialogComponent.openDialog(
       this.dialog,
       (book) => this.bookService.createBook(book)
-    ).subscribe({
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
       next: (result: any) => {
         if (result?.businessError) {
           this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.CREATE_FAILED, 'book')}: ${result.businessError}`);
@@ -92,7 +103,8 @@ export class BookListComponent implements OnInit {
         this.dialog,
         (book) => this.bookService.updateBook(book.id, book),
         bookToEdit
-      ).subscribe({
+      ).pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (result: any) => {
           if (result?.businessError) {
             this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book')}: ${result.businessError}`);
