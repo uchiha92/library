@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -6,6 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Subject, takeUntil } from 'rxjs';
 import { BookFormDialogComponent } from '../../../../shared/components/book-form-dialog/book-form-dialog.component';
 import { BOOK_SERVICE_TOKEN } from '../../../../core/tokens/book-service.token';
 import { NotificationService } from '../../../../core/services/notification-service/notification.service';
@@ -26,12 +27,13 @@ import { NotificationUtils } from '../../../../shared/utils/notification.utils';
   templateUrl: './book-detail.component.html',
   styleUrl: './book-detail.component.css',
 })
-export class BookDetailComponent implements OnInit {
+export class BookDetailComponent implements OnInit, OnDestroy {
   private readonly bookService = inject(BOOK_SERVICE_TOKEN) as any;
   private readonly notificationService = inject(NotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dialog = inject(MatDialog);
+  private readonly destroy$ = new Subject<void>();
 
   private readonly books$ = this.bookService._books;
   
@@ -47,15 +49,23 @@ export class BookDetailComponent implements OnInit {
     this.idParam = this.route.snapshot.paramMap.get('id');
 
     if (this.books$().length === 0) {
-      this.bookService.getBooks().subscribe();
+      this.bookService.getBooks()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   deleteBook(id: string): void {
     this.notificationService.confirmDelete(
       () => this.bookService.deleteBook(id),
       'book'
-    ).subscribe({
+    ).pipe(takeUntil(this.destroy$))
+    .subscribe({
      next: (result: any) => {
         if (result?.businessError) {
           this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.DELETE_FAILED, 'book')}: ${result.businessError}`);
@@ -82,7 +92,8 @@ export class BookDetailComponent implements OnInit {
         this.dialog,
         (book) => this.bookService.updateBook(book.id, book),
         currentBook
-      ).subscribe({
+      ).pipe(takeUntil(this.destroy$))
+      .subscribe({
         next: (result: any) => {
           if (result?.businessError) {
             this.notificationService.showError(`${NotificationUtils.getMessage(NOTIFICATION_MESSAGES.UPDATE_FAILED, 'book')}: ${result.businessError}`);

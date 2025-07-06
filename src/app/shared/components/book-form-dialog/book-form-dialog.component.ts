@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -16,7 +16,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { CommonModule } from '@angular/common';
-import { Observable } from 'rxjs';
+import { Observable, Subject, takeUntil } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import { Book } from '../../../core/models/book';
 import { GENRES } from '../../constants/genres.constants';
@@ -44,10 +44,11 @@ export interface BookFormDialogConfig {
   templateUrl: './book-form-dialog.component.html',
   styleUrl: './book-form-dialog.component.css',
 })
-export class BookFormDialogComponent implements OnInit {
+export class BookFormDialogComponent implements OnInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<BookFormDialogComponent>);
   readonly data = inject<BookFormDialogConfig>(MAT_DIALOG_DATA);
   private readonly fb = inject(FormBuilder);
+  private readonly destroy$ = new Subject<void>();
 
   bookForm!: FormGroup;
   isEditMode = false;
@@ -57,6 +58,11 @@ export class BookFormDialogComponent implements OnInit {
   ngOnInit(): void {
     this.isEditMode = !!this.data.book;
     this.initializeForm();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private initializeForm(): void {
@@ -95,7 +101,9 @@ export class BookFormDialogComponent implements OnInit {
         ...formValue,
       };
 
-      this.data.actionCallback(book).subscribe({
+      this.data.actionCallback(book)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
         next: (result) => {
           if (result?.errors) {
             this.dialogRef.close({ success: false, businessError: result.errors });
